@@ -1,10 +1,11 @@
 {
-  "name": "node-notifications",
+  "name": "osx-notifications",
   "version": "0.0.1",
-  "description": "control osx notification center from node",
+  "description": "Post notifications to OS X's notification centre.",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "preinstall": "node-gyp configure && node-gyp build"
   },
   "repository": {
     "type": "git",
