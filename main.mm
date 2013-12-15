@@ -20,7 +20,10 @@ Handle<Value> InitializeBundle(const Arguments &args) {
 	
 	if (args.IsConstructCall()) {
 		Class $NSBundle = objc_getClass("NSBundle");
-		if (!$NSBundle) { ThrowException(Exception::Error(String::New("Did not link to Foundation.framework"))); }
+		if (!$NSBundle) {
+			ThrowException(Exception::Error(String::New("Did not link to Foundation.framework")));
+			return Undefined();
+		}
 		
 		if (![[$NSBundle mainBundle] bundleIdentifier]) {
 			if (args.Length() == 0) identifier = @"com.apple.Finder";

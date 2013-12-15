@@ -37,7 +37,7 @@ Handle<Value> Notification::New(const Arguments &args) {
 		
 		if (!args[0]->IsObject()) {
 			ThrowException(Exception::TypeError(String::New("Should pass object to constructor.")));
-			return scope.Close(Undefined());
+			return Undefined();
 		}
 		Local<Object> obj = args[0]->ToObject();
 
