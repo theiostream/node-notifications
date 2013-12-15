@@ -24,10 +24,7 @@ class Notification : public ObjectWrap {
 		
 		static Persistent<Function> constructor;
 
-		char *title;
-		char *subtitle;
-		char *info;
-		bool delivered;
+		NSUserNotification *userNotification;
 };
 
 #endif

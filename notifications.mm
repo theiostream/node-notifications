@@ -2,18 +2,16 @@
 
 Persistent<Function> Notification::constructor;
 
-Notification::Notification(char *title_, char *subtitle_, char *info_) :
-	title(title_ != NULL ? strdup(title_) : NULL),
-	subtitle(subtitle_ != NULL ? strdup(subtitle_) : NULL),
-	info(info_ != NULL ? strdup(info_) : NULL)
-{}
+Notification::Notification(char *title_, char *subtitle_, char *info_) {
+	userNotification = [[NSUserNotification alloc] init];
+	[userNotification setTitle:[NSString stringWithUTF8String:title_]];
+	[userNotification setSubtitle:[NSString stringWithUTF8String:subtitle_]];
+	[userNotification setInformativeText:[NSString stringWithUTF8String:info_]];
+}
 
 Notification::~Notification() {
 	//constructor.Dispose();
-
-	if (title != NULL) free(title);
-	if (subtitle != NULL) free(subtitle);
-	if (info != NULL) free(info);
+	[userNotification release];
 }
 
 void Notification::Init(Handle<Object> exports) {
@@ -69,21 +67,25 @@ Handle<Value> Notification::Show(const Arguments &args) {
 	HandleScope scope;
 	
 	Notification *notification = ObjectWrap::Unwrap<Notification>(args.This());
-	NSUserNotification *userNotification = [[NSUserNotification alloc] init];
-	[userNotification setTitle:[NSString stringWithUTF8String:notification->title]];
-	[userNotification setSubtitle:[NSString stringWithUTF8String:notification->subtitle]];
-	[userNotification setInformativeText:[NSString stringWithUTF8String:notification->info]];
-
-	[[NSUserNotificationCenter defaultUserNotificationCenter] deliverNotification:userNotification];
-	[userNotification release];
+	[[NSUserNotificationCenter defaultUserNotificationCenter] deliverNotification:notification->userNotification];
 
 	return Undefined();
 }
 
 Handle<Value> Notification::Remove(const Arguments &args) {
+	HandleScope scope;
+
+	Notification *notification = ObjectWrap::Unwrap<Notification>(args.This());
+	[[NSUserNotificationCenter defaultUserNotificationCenter] removeDeliveredNotification:notification->userNotification];
+	
 	return Undefined();
 }
 
 Handle<Value> Notification::HasDelivered(const Arguments &args) {
-	return Undefined();
+	HandleScope scope;
+
+	Notification *notification = ObjectWrap::Unwrap<Notification>(args.This());
+	NSArray *deliveredNotifications = [[NSUserNotificationCenter defaultUserNotificationCenter] deliveredNotifications];
+	
+	return scope.Close(v8::Boolean::New((bool)[deliveredNotifications containsObject:notification->userNotification]));
 }
