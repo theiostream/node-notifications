@@ -11,9 +11,9 @@ Notification::Notification(char *title_, char *subtitle_, char *info_) :
 Notification::~Notification() {
 	//constructor.Dispose();
 
-	free(title);
-	free(subtitle);
-	free(info);
+	if (title != NULL) free(title);
+	if (subtitle != NULL) free(subtitle);
+	if (info != NULL) free(info);
 }
 
 void Notification::Init(Handle<Object> exports) {
@@ -35,7 +35,7 @@ Handle<Value> Notification::New(const Arguments &args) {
 	HandleScope scope;
 
 	if (args.IsConstructCall()) {
-		char *title="", *subtitle="", *info="";
+		char *title=(char*)"", *subtitle=(char*)"", *info=(char*)"";
 		
 		if (!args[0]->IsObject()) {
 			ThrowException(Exception::TypeError(String::New("Should pass object to constructor.")));
@@ -44,16 +44,20 @@ Handle<Value> Notification::New(const Arguments &args) {
 		Local<Object> obj = args[0]->ToObject();
 
 		Local<Value> title_ = obj->Get(String::New("title"));
-		if (title_->IsString()) title = *(String::AsciiValue(title_->ToString()));
+		if (title_->IsString()) title = strdup(*(String::AsciiValue(title_->ToString())));
 		Local<Value> subtitle_ = obj->Get(String::New("subtitle"));
-		if (subtitle_->IsString()) subtitle = *(String::AsciiValue(subtitle_->ToString()));
+		if (subtitle_->IsString()) subtitle = strdup(*(String::AsciiValue(subtitle_->ToString())));
 		Local<Value> info_ = obj->Get(String::New("info"));
-		if (info_->IsString()) info = *(String::AsciiValue(info_->ToString()));
+		if (info_->IsString()) info = strdup(*(String::AsciiValue(info_->ToString())));
 		
 		fprintf(stderr, "stderr teststrings %s %s %s\n", title, subtitle, info);
 
 		Notification *notification = new Notification(title, subtitle, info);
 		notification->Wrap(args.This());
+
+		if (strlen(title) > 0) free(title);
+		if (strlen(subtitle) > 0) free(subtitle);
+		if (strlen(info) > 0) free(info);
 
 		return args.This();
 	}
