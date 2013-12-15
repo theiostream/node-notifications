@@ -2,7 +2,7 @@
   "targets": [
     {
       "target_name": "nodenotifications",
-      "sources": [ "main.cc", "notifications.cc" ]
+      "sources": [ "main.mm", "notifications.mm" ]
     }
   ]
 }

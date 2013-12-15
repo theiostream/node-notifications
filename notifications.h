@@ -1,16 +1,19 @@
 #ifndef _NOTIFICATIONS_H
 #define _NOTIFICATIONS_H
 
+#import <Foundation/Foundation.h>
+
 #include <node.h>
 #include <v8.h>
 using namespace v8;
+using namespace node;
 
-class Notification : public node::ObjectWrap {
+class Notification : public ObjectWrap {
 	public:
 		static void Init(Handle<Object> exports);
 	
 	private:
-		explicit Notification(Handle<Object> options);
+		explicit Notification(char *a, char *b, char *c);
 		~Notification();
 
 		static Handle<Value> New(const Arguments &args);
@@ -20,7 +23,11 @@ class Notification : public node::ObjectWrap {
 		static Handle<Value> On(const Arguments &args);
 		
 		static Persistent<Function> constructor;
-		Persistent<Object> options;
-}
+
+		char *title;
+		char *subtitle;
+		char *info;
+		bool delivered;
+};
 
 #endif
