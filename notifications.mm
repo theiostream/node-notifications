@@ -50,8 +50,6 @@ Handle<Value> Notification::New(const Arguments &args) {
 		Local<Value> info_ = obj->Get(String::New("info"));
 		if (info_->IsString()) info = strdup(*(String::AsciiValue(info_->ToString())));
 		
-		fprintf(stderr, "stderr teststrings %s %s %s\n", title, subtitle, info);
-
 		Notification *notification = new Notification(title, subtitle, info);
 		notification->Wrap(args.This());
 
@@ -77,7 +75,7 @@ Handle<Value> Notification::Show(const Arguments &args) {
 	[userNotification setInformativeText:[NSString stringWithUTF8String:notification->info]];
 
 	[[NSUserNotificationCenter defaultUserNotificationCenter] deliverNotification:userNotification];
-	fprintf(stderr, "what is default? %p\n", [NSUserNotificationCenter defaultUserNotificationCenter]);
+	[userNotification release];
 
 	return Undefined();
 }
