@@ -1,6 +1,6 @@
 #include "notifications.h"
 
-Persistent<Function> Notification::constructor;
+Persistent<Function> Notification::constructor; // leak?
 
 Notification::Notification(char *title_, char *subtitle_, char *info_) {
 	userNotification = [[NSUserNotification alloc] init];
@@ -10,8 +10,8 @@ Notification::Notification(char *title_, char *subtitle_, char *info_) {
 }
 
 Notification::~Notification() {
-	//constructor.Dispose();
 	[userNotification release];
+	fprintf(stderr, "called our pretty destructor\n");
 }
 
 void Notification::Init(Handle<Object> exports) {
@@ -55,7 +55,7 @@ Handle<Value> Notification::New(const Arguments &args) {
 		if (strlen(subtitle) > 0) free(subtitle);
 		if (strlen(info) > 0) free(info);
 
-		return args.This();
+		return scope.Close(args.This());
 	}
 
 	const int argc = 1;
@@ -68,7 +68,7 @@ Handle<Value> Notification::Show(const Arguments &args) {
 	
 	Notification *notification = ObjectWrap::Unwrap<Notification>(args.This());
 	[[NSUserNotificationCenter defaultUserNotificationCenter] deliverNotification:notification->userNotification];
-
+	
 	return Undefined();
 }
 
@@ -87,5 +87,5 @@ Handle<Value> Notification::HasDelivered(const Arguments &args) {
 	Notification *notification = ObjectWrap::Unwrap<Notification>(args.This());
 	NSArray *deliveredNotifications = [[NSUserNotificationCenter defaultUserNotificationCenter] deliveredNotifications];
 	
-	return scope.Close(v8::Boolean::New((bool)[deliveredNotifications containsObject:notification->userNotification]));
+	return v8::Boolean::New((bool)[deliveredNotifications containsObject:notification->userNotification]);
 }

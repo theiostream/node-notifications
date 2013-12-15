@@ -22,20 +22,22 @@ Handle<Value> InitializeBundle(const Arguments &args) {
 		Class $NSBundle = objc_getClass("NSBundle");
 		if (!$NSBundle) { ThrowException(Exception::Error(String::New("Did not link to Foundation.framework"))); }
 		
-		if (args.Length() == 0) identifier = @"com.apple.Finder";
-		else {
-			Local<Value> bundleId = args[0];
-			if (bundleId->IsString()) {
-				identifier = [NSString stringWithUTF8String:*(String::AsciiValue(bundleId->ToString()))];
+		if (![[$NSBundle mainBundle] bundleIdentifier]) {
+			if (args.Length() == 0) identifier = @"com.apple.Finder";
+			else {
+				Local<Value> bundleId = args[0]; // what on error?
+				if (bundleId->IsString()) {
+					identifier = [NSString stringWithUTF8String:*(String::AsciiValue(bundleId->ToString()))];
+				}
 			}
+
+			Method identifierOrig = class_getInstanceMethod($NSBundle, @selector(bundleIdentifier));
+			__NodeNotificationsIdentifierOriginal = method_getImplementation(identifierOrig);
+			method_setImplementation(identifierOrig, (IMP)__NodeNotificationsIdentifierOverride);
 		}
 
-		Method identifierOrig = class_getInstanceMethod($NSBundle, @selector(bundleIdentifier));
-		__NodeNotificationsIdentifierOriginal = method_getImplementation(identifierOrig);
-		method_setImplementation(identifierOrig, (IMP)__NodeNotificationsIdentifierOverride);
-
 		Notification::Init(args.This());
-		return args.This();
+		return scope.Close(args.This());
 	}
 
 	const int argc = 1;
@@ -44,6 +46,8 @@ Handle<Value> InitializeBundle(const Arguments &args) {
 }
 
 void ModuleInit(Handle<Object> exports, Handle<Object> module) {
+	HandleScope scope;
+	
 	Local<FunctionTemplate> tpl = FunctionTemplate::New(InitializeBundle);
 	tpl->SetClassName(String::NewSymbol("nodenotifications"));
 	tpl->InstanceTemplate()->SetInternalFieldCount(1);
