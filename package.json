@@ -1,0 +1,22 @@
+{
+  "name": "node-notifications",
+  "version": "0.0.1",
+  "description": "control osx notification center from node",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/theiostream/node-notifications.git"
+  },
+  "keywords": [
+    "osx"
+  ],
+  "author": "Fionn Kelleher",
+  "license": "GNU LGPL 3",
+  "bugs": {
+    "url": "https://github.com/theiostream/node-notifications/issues"
+  },
+  "homepage": "https://github.com/theiostream/node-notifications"
+}
