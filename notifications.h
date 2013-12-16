@@ -10,10 +10,11 @@ using namespace node;
 
 class Notification : public ObjectWrap {
 	public:
-		static void Init(Handle<Object> exports);
+		static void Init();
+		static void AddToExports(Handle<Object> exports);
 	
 	private:
-		explicit Notification(char *a, char *b, char *c);
+		explicit Notification(NSString *a, NSString *b, NSString *c);
 		~Notification();
 
 		static Handle<Value> New(const Arguments &args);
@@ -23,7 +24,7 @@ class Notification : public ObjectWrap {
 		static Handle<Value> On(const Arguments &args);
 		
 		static Persistent<Function> constructor;
-
+		
 		NSUserNotification *userNotification;
 };
 

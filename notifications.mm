@@ -2,19 +2,20 @@
 
 Persistent<Function> Notification::constructor; // leak?
 
-Notification::Notification(char *title_, char *subtitle_, char *info_) {
-	userNotification = [[NSUserNotification alloc] init];
-	[userNotification setTitle:[NSString stringWithUTF8String:title_]];
-	[userNotification setSubtitle:[NSString stringWithUTF8String:subtitle_]];
-	[userNotification setInformativeText:[NSString stringWithUTF8String:info_]];
+Notification::Notification(NSString *title, NSString *subtitle, NSString *info) {
+	@autoreleasepool {
+		userNotification = [[NSUserNotification alloc] init];
+		[userNotification setTitle:title];
+		[userNotification setSubtitle:subtitle];
+		[userNotification setInformativeText:info];
+	}
 }
 
 Notification::~Notification() {
 	[userNotification release];
-	fprintf(stderr, "called our pretty destructor\n");
 }
 
-void Notification::Init(Handle<Object> exports) {
+void Notification::Init() {
 	HandleScope scope;
 	
 	Local<FunctionTemplate> tpl = FunctionTemplate::New(New);
@@ -26,6 +27,10 @@ void Notification::Init(Handle<Object> exports) {
 	NODE_SET_PROTOTYPE_METHOD(tpl, "hasDelivered", HasDelivered);
 	
 	constructor = Persistent<Function>::New(tpl->GetFunction());
+}
+
+void Notification::AddToExports(Handle<Object> exports) {
+	HandleScope scope;
 	exports->Set(String::NewSymbol("Notification"), constructor);
 }
 
@@ -33,27 +38,29 @@ Handle<Value> Notification::New(const Arguments &args) {
 	HandleScope scope;
 
 	if (args.IsConstructCall()) {
-		char *title=(char*)"", *subtitle=(char*)"", *info=(char*)"";
-		
+		NSString *title=nil, *subtitle=nil, *info=nil;
+
 		if (!args[0]->IsObject()) {
 			ThrowException(Exception::TypeError(String::New("Should pass object to constructor.")));
 			return Undefined();
 		}
 		Local<Object> obj = args[0]->ToObject();
-
-		Local<Value> title_ = obj->Get(String::New("title"));
-		if (title_->IsString()) title = strdup(*(String::AsciiValue(title_->ToString())));
-		Local<Value> subtitle_ = obj->Get(String::New("subtitle"));
-		if (subtitle_->IsString()) subtitle = strdup(*(String::AsciiValue(subtitle_->ToString())));
-		Local<Value> info_ = obj->Get(String::New("info"));
-		if (info_->IsString()) info = strdup(*(String::AsciiValue(info_->ToString())));
+		
+		@autoreleasepool {
+			Local<Value> title_ = obj->Get(String::New("title"));
+			if (title_->IsString()) title = [[NSString alloc] initWithUTF8String:*(String::AsciiValue(title_->ToString()))];
+			Local<Value> subtitle_ = obj->Get(String::New("subtitle"));
+			if (subtitle_->IsString()) subtitle = [[NSString alloc] initWithUTF8String:*(String::AsciiValue(subtitle_->ToString()))];
+			Local<Value> info_ = obj->Get(String::New("info"));
+			if (info_->IsString()) info = [[NSString alloc] initWithUTF8String:*(String::AsciiValue(info_->ToString()))];
+		}
 		
 		Notification *notification = new Notification(title, subtitle, info);
 		notification->Wrap(args.This());
 
-		if (strlen(title) > 0) free(title);
-		if (strlen(subtitle) > 0) free(subtitle);
-		if (strlen(info) > 0) free(info);
+		if (title != nil) [title release];
+		if (subtitle != nil) [subtitle release];
+		if (info != nil) [info release];
 
 		return scope.Close(args.This());
 	}
@@ -67,7 +74,9 @@ Handle<Value> Notification::Show(const Arguments &args) {
 	HandleScope scope;
 	
 	Notification *notification = ObjectWrap::Unwrap<Notification>(args.This());
-	[[NSUserNotificationCenter defaultUserNotificationCenter] deliverNotification:notification->userNotification];
+	@autoreleasepool {
+		[[NSUserNotificationCenter defaultUserNotificationCenter] deliverNotification:notification->userNotification];
+	}
 	
 	return Undefined();
 }
@@ -76,16 +85,22 @@ Handle<Value> Notification::Remove(const Arguments &args) {
 	HandleScope scope;
 
 	Notification *notification = ObjectWrap::Unwrap<Notification>(args.This());
-	[[NSUserNotificationCenter defaultUserNotificationCenter] removeDeliveredNotification:notification->userNotification];
+	@autoreleasepool {
+		[[NSUserNotificationCenter defaultUserNotificationCenter] removeDeliveredNotification:notification->userNotification];
+	}
 	
 	return Undefined();
 }
 
 Handle<Value> Notification::HasDelivered(const Arguments &args) {
 	HandleScope scope;
-
-	Notification *notification = ObjectWrap::Unwrap<Notification>(args.This());
-	NSArray *deliveredNotifications = [[NSUserNotificationCenter defaultUserNotificationCenter] deliveredNotifications];
 	
-	return v8::Boolean::New((bool)[deliveredNotifications containsObject:notification->userNotification]);
+	Handle<Value> ret;
+	@autoreleasepool {
+		Notification *notification = ObjectWrap::Unwrap<Notification>(args.This());
+		NSArray *deliveredNotifications = [[NSUserNotificationCenter defaultUserNotificationCenter] deliveredNotifications];
+		ret = v8::Boolean::New((bool)[deliveredNotifications containsObject:notification->userNotification]);
+	}
+
+	return ret;
 }
