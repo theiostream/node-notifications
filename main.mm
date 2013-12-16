@@ -6,15 +6,37 @@
 
 using namespace v8;
 
+/* Hooks {{{ */
+static IMP __NodeNotificationsNotificationCenterOriginal = NULL;
+static BOOL isInvokingNotificationCenter = NO;
+static NSUserNotificationCenter *__NodeNotificationsNotificationCenterOverride(Class self, SEL _cmd) {
+	isInvokingNotificationCenter = YES;
+	NSUserNotificationCenter *center = __NodeNotificationsNotificationCenterOriginal(self, _cmd);
+	isInvokingNotificationCenter = NO;
+
+	return center;
+}
+
 static IMP __NodeNotificationsIdentifierOriginal = NULL;
 static NSString *identifier = nil;
 static NSString *__NodeNotificationsIdentifierOverride(NSBundle *self, SEL _cmd) {
-	if (self == [NSBundle mainBundle]) return identifier;
+	if (self == [NSBundle mainBundle] && isInvokingNotificationCenter) return identifier;
 	return __NodeNotificationsIdentifierOriginal(self, _cmd);
 }
 
-static Persistent<Function> ModuleCtor;
+static void PerformHooks() {
+	Method ncOrig = class_getClassMethod($NSUserNotificationCenter, @selector(defaultUserNotificationCenter));
+	__NodeNotificationsNotificationCenterOriginal = method_getImplementation(ncOrig);
+	method_setImplementation(ncOrig, (IMP)__NodeNotificationsNotificationCenterOverride);
 
+	Method identifierOrig = class_getInstanceMethod($NSBundle, @selector(bundleIdentifier));
+	__NodeNotificationsIdentifierOriginal = method_getImplementation(identifierOrig);
+	method_setImplementation(identifierOrig, (IMP)__NodeNotificationsIdentifierOverride);
+
+}
+/* }}} */
+
+static Persistent<Function> ModuleCtor;
 Handle<Value> InitializeBundle(const Arguments &args) {
 	HandleScope scope;
 	
@@ -40,10 +62,6 @@ Handle<Value> InitializeBundle(const Arguments &args) {
 						identifier = [[NSString alloc] initWithUTF8String:identifier_];
 					}
 				}
-
-				Method identifierOrig = class_getInstanceMethod($NSBundle, @selector(bundleIdentifier));
-				__NodeNotificationsIdentifierOriginal = method_getImplementation(identifierOrig);
-				method_setImplementation(identifierOrig, (IMP)__NodeNotificationsIdentifierOverride);
 			}
 		}
 		
@@ -56,7 +74,10 @@ Handle<Value> InitializeBundle(const Arguments &args) {
 	return scope.Close(ModuleCtor->NewInstance(argc, argv));
 }
 
+
 void ModuleInit(Handle<Object> exports, Handle<Object> module) {
+	PerformHooks();
+	
 	HandleScope scope;
 	
 	Notification::Init();
