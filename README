@@ -1,0 +1,18 @@
+Build instructions:
+
+Preliminary:
+- Install... node? (v8, etc. all that shit)
+- Install node-gyp
+- Have a local copy of logos.pl (github.com/DHowett/theos) in your PATH
+
+Build:
+$ ./run_logos.sh
+$ node-gyp configure
+$ node-gyp build
+
+Run:
+$ node
+> require('./')
+
+Reference:
+Ask Fudge.
