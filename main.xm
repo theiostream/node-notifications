@@ -82,6 +82,7 @@ void ModuleInit(Handle<Object> exports, Handle<Object> module) {
 	HandleScope scope;
 	
 	Notification::Init();
+	module->Set(String::NewSymbol("NotificationCtor"), Notification::constructor);
 	
 	Local<FunctionTemplate> tpl = FunctionTemplate::New(InitializeBundle);
 	tpl->SetClassName(String::NewSymbol("nodenotifications"));

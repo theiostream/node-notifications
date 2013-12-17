@@ -12,6 +12,8 @@ class Notification : public ObjectWrap {
 	public:
 		static void Init();
 		static void AddToExports(Handle<Object> exports);
+		
+		static Persistent<Function> constructor;
 	
 	private:
 		explicit Notification(NSString *a, NSString *b, NSString *c);
@@ -22,8 +24,6 @@ class Notification : public ObjectWrap {
 		static Handle<Value> Remove(const Arguments &args);
 		static Handle<Value> HasDelivered(const Arguments &args);
 		static Handle<Value> On(const Arguments &args);
-		
-		static Persistent<Function> constructor;
 		
 		NSUserNotification *userNotification;
 };
