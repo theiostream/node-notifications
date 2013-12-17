@@ -1,0 +1,3 @@
+[submodule "logos"]
+	path = logos
+	url = git://github.com/DHowett/logos.git
