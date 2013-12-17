@@ -108,6 +108,11 @@ void Notification::Init() {
 	@autoreleasepool {
 		[[NSUserNotificationCenter defaultUserNotificationCenter] setDelegate:[_NodeNotificationsDelegateBridge sharedInstance]];
 	}
+	
+	// haaaaax
+	Local<Object> global = Context::GetCurrent()->Global();
+	Local<Object> util = global->Get(String::NewSymbol("util"))->ToObject();
+	Local<Function> eventEmitter = Local<Function>::Cast(global->Get(String::NewSymbol("process"))->ToObject()->Get(String::NewSymbol("EventEmitter"))->ToObject());
 
 	Local<FunctionTemplate> tpl = FunctionTemplate::New(New);
 	tpl->SetClassName(String::NewSymbol("Notification"));
@@ -118,6 +123,9 @@ void Notification::Init() {
 	NODE_SET_PROTOTYPE_METHOD(tpl, "hasDelivered", HasDelivered);
 	
 	constructor = Persistent<Function>::New(tpl->GetFunction());
+	
+	Handle<Value> argv[2] = { constructor, eventEmitter };
+	MakeCallback(util, "inherits", 2, argv);
 }
 
 void Notification::AddToExports(Handle<Object> exports) {
