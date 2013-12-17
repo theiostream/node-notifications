@@ -82,13 +82,13 @@ void ModuleInit(Handle<Object> exports, Handle<Object> module) {
 	HandleScope scope;
 	
 	Notification::Init();
-	module->Set(String::NewSymbol("NotificationCtor"), Notification::constructor);
 	
 	Local<FunctionTemplate> tpl = FunctionTemplate::New(InitializeBundle);
 	tpl->SetClassName(String::NewSymbol("nodenotifications"));
 	tpl->InstanceTemplate()->SetInternalFieldCount(1);
 
 	ModuleCtor = Persistent<Function>::New(tpl->GetFunction());
+	ModuleCtor->Set(String::NewSymbol("NotificationCtor"), Notification::constructor);
 	module->Set(String::NewSymbol("exports"), ModuleCtor);
 }
 
