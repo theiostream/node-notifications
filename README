@@ -3,7 +3,7 @@ Build instructions:
 Preliminary:
 - Install... node? (v8, etc. all that shit)
 - Install node-gyp
-- Have a local copy of logos.pl (github.com/DHowett/theos) in your PATH
+- git submodule init or whatever
 
 Build:
 $ ./run_logos.sh
