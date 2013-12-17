@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
+    "prepublish": "./logos/bin/logos.pl main.xm | sed -e '/logos.h/d' > main.mm",
     "preinstall": "node-gyp configure && node-gyp build"
   },
   "repository": {
