@@ -2,7 +2,7 @@
 #include <map>
 
 @interface _NodeNotificationsDelegateBridge : NSObject <NSUserNotificationCenterDelegate> {
-	std::map<NSUserNotification *, Persistent<Object> > *handleMap;
+	std::map<NSUInteger, Persistent<Object> > *handleMap;
 }
 + (id)sharedInstance;
 - (void)mapHandle:(Handle<Object>)handle toUserNotification:(NSUserNotification *)userNotification;
@@ -23,7 +23,7 @@ static _NodeNotificationsDelegateBridge *_sharedInstance = nil;
 
 - (id)init {
 	if ((self = [super init])) {
-		handleMap = new std::map<NSUserNotification *, Persistent<Object> >;
+		handleMap = new std::map<NSUInteger, Persistent<Object> >;
 	}
 
 	return self;
@@ -35,37 +35,42 @@ static _NodeNotificationsDelegateBridge *_sharedInstance = nil;
 }
 
 - (void)mapHandle:(Handle<Object>)handle toUserNotification:(NSUserNotification *)userNotification {
-	handleMap->insert(std::pair<NSUserNotification *, Persistent<Object> >(userNotification, Persistent<Object>::New(handle)));
+	handleMap->insert(std::pair<NSUInteger, Persistent<Object> >([userNotification hash], Persistent<Object>::New(handle)));
 }
 
 - (void)unmapHandleToUserNotification:(NSUserNotification *)userNotification {
-	handleMap->at(userNotification).Dispose();
-	handleMap->erase(userNotification);
+	handleMap->at([userNotification hash]).Dispose();
+	handleMap->erase([userNotification hash]);
 }
 
-- (void)userNotificationCenter:(NSUserNotificationCenter *)center didActivateNotification:(NSUserNotification *)userNotification {
+- (void)userNotificationCenter:(NSUserNotificationCenter *)center didDeliverNotification:(NSUserNotification *)userNotification {
+	printf("HELLO DELIVER\n");
 	HandleScope scope;
 	
 	Local<Value> argv[1] = {
 		String::New("delivery")
 	};
-	MakeCallback(handleMap->at(userNotification), "emit", 1, argv);
+	
+	//printf("CTOR NAME %s\n", *(String::AsciiValue(handleMap->at([userNotification hash])->GetConstructorName())));
+	MakeCallback(handleMap->at([userNotification hash]), "emit", 1, argv);
 }
 
 - (BOOL)userNotificationCenter:(NSUserNotificationCenter *)center shouldPresentNotification:(NSUserNotification *)userNotification {
+	printf("HELLO SHOULD\n");
 	HandleScope scope;
 
 	Local<Value> argv[1] = {
 		String::New("permitDisplay")
 	};
 	
-	Handle<Value> shouldDisplay = MakeCallback(handleMap->at(userNotification), "emit", 1, argv);
+	Handle<Value> shouldDisplay = MakeCallback(handleMap->at([userNotification hash]), "emit", 1, argv);
 	Local<v8::Boolean> ret = shouldDisplay->ToBoolean();
-
+	
 	return ret->Value();
 }
 
-- (void)userNotificationCenter:(NSUserNotificationCenter *)center didDeliverNotification:(NSUserNotification *)userNotification {
+- (void)userNotificationCenter:(NSUserNotificationCenter *)center didActivateNotification:(NSUserNotification *)userNotification {
+	printf("HELLO ACTIVE\n");
 	NSUserNotificationActivationType type = [userNotification activationType];
 	unsigned int argc;
 	Local<Value> argv[2];
@@ -79,8 +84,8 @@ static _NodeNotificationsDelegateBridge *_sharedInstance = nil;
 		argv[0] = String::New("activate");
 		argv[1] = type == NSUserNotificationActivationTypeContentsClicked ? String::New("content") : String::New("button");
 	}
-
-	MakeCallback(handleMap->at(userNotification), "emit", argc, argv);
+	
+	MakeCallback(handleMap->at([userNotification hash]), "emit", argc, argv);
 }
 @end
 
@@ -105,10 +110,6 @@ Notification::~Notification() {
 void Notification::Init() {
 	HandleScope scope;
 	
-	@autoreleasepool {
-		[[NSUserNotificationCenter defaultUserNotificationCenter] setDelegate:[_NodeNotificationsDelegateBridge sharedInstance]];
-	}
-
 	Local<FunctionTemplate> tpl = FunctionTemplate::New(New);
 	tpl->SetClassName(String::NewSymbol("Notification"));
 	tpl->InstanceTemplate()->SetInternalFieldCount(1);
@@ -120,9 +121,17 @@ void Notification::Init() {
 	constructor = Persistent<Function>::New(tpl->GetFunction());
 }
 
-void Notification::AddToExports(Handle<Object> exports) {
+void Notification::AddToExportsInstance(Handle<Object> exports) {
 	HandleScope scope;
 	exports->Set(String::NewSymbol("Notification"), constructor);
+}
+
+// Should get called from an autoreleasepool block!
+void Notification::InitBridge() {
+	static dispatch_once_t token;
+	dispatch_once(&token, ^{
+		[[NSUserNotificationCenter defaultUserNotificationCenter] setDelegate:[_NodeNotificationsDelegateBridge sharedInstance]];
+	});
 }
 
 Handle<Value> Notification::New(const Arguments &args) {

@@ -11,7 +11,8 @@ using namespace node;
 class Notification : public ObjectWrap {
 	public:
 		static void Init();
-		static void AddToExports(Handle<Object> exports);
+		static void AddToExportsInstance(Handle<Object> exports);
+		static void InitBridge();
 		
 		static Persistent<Function> constructor;
 	
